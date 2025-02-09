@@ -36,6 +36,25 @@ async def read_contacts(
     return contacts
 
 
+@router.get("/upcoming_birthdays", response_model=Sequence[ContactOut])
+async def get_upcoming_birthdays(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """
+    Retrieve contacts with upcoming birthdays within the next 7 days.
+
+    Args:
+        db (AsyncSession): Database session dependency.
+        user (User): Current authenticated user.
+
+    Returns:
+        Sequence[ContactOut]: A list of contacts with upcoming birthdays.
+    """
+    contact_service = ContactService(db)
+    return await contact_service.get_upcoming_birthdays(user=user)
+
+
 @router.get("/{contact_id}", response_model=ContactOut)
 async def read_contact(
     contact_id: int,
@@ -55,10 +74,12 @@ async def read_contact(
     """
     contact_service = ContactService(db)
     contact = await contact_service.get_contact(contact_id=contact_id, user=user)
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
     return contact
 
 
-@router.post("/", response_model=ContactOut)
+@router.post("/", response_model=ContactOut, status_code=201)
 async def create_contact(
     contact_data: ContactCreate,
     db: AsyncSession = Depends(get_db),
@@ -108,7 +129,7 @@ async def update_contact(
     return contact
 
 
-@router.delete("/{contact_id}")
+@router.delete("/{contact_id}", response_model=dict)
 async def delete_contact(
     contact_id: int,
     db: AsyncSession = Depends(get_db),
@@ -127,25 +148,8 @@ async def delete_contact(
     """
     contact_service = ContactService(db)
     is_deleted = await contact_service.delete_contact(contact_id=contact_id, user=user)
+
     if not is_deleted:
         raise HTTPException(status_code=404, detail="Contact not found")
+
     return {"detail": "Contact deleted successfully"}
-
-
-@router.get("/upcoming_birthdays", response_model=Sequence[ContactOut])
-async def get_upcoming_birthdays(
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """
-    Retrieve contacts with upcoming birthdays within the next 7 days.
-
-    Args:
-        db (AsyncSession): Database session dependency.
-        user (User): Current authenticated user.
-
-    Returns:
-        Sequence[ContactOut]: A list of contacts with upcoming birthdays.
-    """
-    contact_service = ContactService(db)
-    return await contact_service.get_upcoming_birthdays(user=user)

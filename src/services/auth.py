@@ -1,14 +1,19 @@
+import json
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 
 from src.database.db import get_db
 from src.conf.config import settings
+from src.database.redis import get_redis
+from src.database.models import User
+from src.schemas.users import UserSchema
 from src.services.users import UserService
 
 
@@ -50,22 +55,29 @@ class Hash:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-async def create_access_token(data: dict, expires_delta: Optional[int] = None) -> str:
+async def create_access_token(
+    data: dict, role: str, expires_delta: Optional[int] = None
+) -> str:
     """
     Generate a JWT access token with an expiration time.
 
     Args:
         data (dict): The payload data to include in the token.
+        role (str): The role of the token.
         expires_delta (Optional[int]): The expiration time in seconds.
 
     Returns:
         str: Encoded JWT access token.
     """
     to_encode = data.copy()
+    to_encode.update({"role": role})
+
     if expires_delta:
         expire = datetime.now(UTC) + timedelta(seconds=expires_delta)
     else:
-        expire = datetime.now(UTC) + timedelta(seconds=settings.JWT_EXPIRATION_SECONDS)
+        expire = datetime.now(UTC) + timedelta(
+            seconds=int(settings.JWT_EXPIRATION_SECONDS)
+        )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
@@ -74,17 +86,20 @@ async def create_access_token(data: dict, expires_delta: Optional[int] = None) -
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
-) -> UserService:
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db),
+    redis=Depends(get_redis),
+) -> User:
     """
     Retrieve the currently authenticated user from a JWT token.
 
     Args:
         token (str): The JWT access token provided by the user.
         db (AsyncSession): The database session.
+        redis: Redis connection instance.
 
     Returns:
-        UserService: The authenticated user instance.
+        User: The authenticated user instance.
 
     Raises:
         HTTPException: If token validation fails or the user does not exist.
@@ -95,19 +110,28 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    cached_user = await redis.get(f"user:{token}")
+    if cached_user:
+        return User(**json.loads(cached_user))
+
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
         )
         email = payload.get("sub")
-        if email is None:
+        role = payload.get("role")
+        if email is None or role is None:
             raise credentials_exception
-    except JWTError as e:
+    except JWTError:
         raise credentials_exception
+
     user_service = UserService(db)
     user = await user_service.get_user_by_email(email)
     if user is None:
         raise credentials_exception
+    user_schema = UserSchema.model_validate(user)
+    await redis.setex(f"user:{token}", 600, json.dumps(user_schema.model_dump()))
+
     return user
 
 
@@ -152,3 +176,36 @@ async def get_email_from_token(token: str) -> str:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Incorrect token",
         )
+
+
+async def generate_reset_token(
+    email: EmailStr, expires_delta: Optional[int] = None
+) -> str:
+    """
+    Generate JWT-token with an expiration time for a given email.
+
+    Args:
+        email (EmailStr): The email to generate a token for.
+        expires_delta (Optional[int]): The expiration time in seconds.
+
+    Return:
+        str: Encoded JWT access token.
+    """
+    if expires_delta:
+        expire = datetime.now(UTC) + timedelta(seconds=expires_delta)
+    else:
+        expire = datetime.now(UTC) + timedelta(
+            seconds=int(settings.JWT_EXPIRATION_SECONDS)
+        )
+    payload = {"sub": email, "exp": expire}
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+def is_admin(user: UserSchema) -> bool:
+    """
+    Check if the user is an administrator.
+
+    Returns:
+        bool: True if the user is an administrator.
+    """
+    return user.role == "admin"

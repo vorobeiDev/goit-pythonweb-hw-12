@@ -40,7 +40,7 @@ class ContactRepository:
         Returns:
             Sequence[Contact]: A list of contacts that match the criteria.
         """
-        query = select(Contact).filter_by(user=user)
+        query = select(Contact).filter(Contact.user_id == user.id)
 
         if name:
             query = query.filter(Contact.name.ilike(f"%{name}%"))
@@ -106,7 +106,7 @@ class ContactRepository:
             await self.db.refresh(contact)
         return contact
 
-    async def delete(self, contact_id: int, user: User) -> None:
+    async def delete(self, contact_id: int, user: User) -> Optional[Contact]:
         """
         Deletes a contact by its ID.
 
@@ -115,11 +115,12 @@ class ContactRepository:
             user (User): The owner of the contact.
 
         Returns:
-            None: If the contact is deleted successfully.
+            Contact: If the contact is deleted successfully.
         """
         contact = await self.get_by_id(contact_id=contact_id, user=user)
-        if contact:
-            await self.db.delete(contact)
-            await self.db.commit()
+        if contact is None:
+            return None
 
+        await self.db.delete(contact)
+        await self.db.commit()
         return contact

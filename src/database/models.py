@@ -1,3 +1,4 @@
+import enum
 from sqlalchemy import (
     Column,
     Integer,
@@ -8,11 +9,13 @@ from sqlalchemy import (
     Text,
     ForeignKey,
     Boolean,
+    Enum,
 )
 
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
+
 
 class Contact(Base):
     """
@@ -28,6 +31,7 @@ class Contact(Base):
         user_id (int): The ID of the user who owns the contact.
         user (User): Relationship reference to the User entity.
     """
+
     __tablename__ = "contacts"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -42,6 +46,12 @@ class Contact(Base):
     )
     user = relationship("User", backref="users")
 
+
+class UserRole(str, enum.Enum):
+    user = "user"
+    admin = "admin"
+
+
 class User(Base):
     """
     Represents a user entity in the database.
@@ -54,7 +64,9 @@ class User(Base):
         created_at (datetime): The timestamp when the user was created.
         avatar (str, optional): The URL of the user's avatar.
         confirmed (bool): Indicates whether the user's email has been confirmed.
+        role (UserRole): The user role of the user.
     """
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
@@ -64,3 +76,4 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
     avatar = Column(String(255), nullable=True)
     confirmed = Column(Boolean, default=False)
+    role = Column(Enum(UserRole), default=UserRole.user)

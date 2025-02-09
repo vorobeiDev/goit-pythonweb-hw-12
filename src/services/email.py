@@ -1,10 +1,10 @@
+from asyncio.log import logger
 from pathlib import Path
 
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from fastapi_mail.errors import ConnectionErrors
 from pydantic import EmailStr
 
-from src.services.auth import create_email_token
 from src.conf.config import settings
 
 conf = ConnectionConfig(
@@ -35,6 +35,8 @@ async def send_email(email: EmailStr, username: str, host: str):
         ConnectionErrors: If there is an issue sending the email.
     """
     try:
+        from src.services.auth import create_email_token
+
         token_verification = create_email_token({"sub": email})
         message = MessageSchema(
             subject="Confirm your email",
@@ -49,5 +51,46 @@ async def send_email(email: EmailStr, username: str, host: str):
 
         fm = FastMail(conf)
         await fm.send_message(message, template_name="verify_email.html")
+
     except ConnectionErrors as err:
-        print(err)
+        logger.error(f"Failed to send email: {err}")
+        print(f"Failed to send email: {err}")
+    except Exception as e:
+        logger.error(f"Unexpected error in send_email: {e}")
+        print(f"Unexpected error: {e}")
+
+
+async def send_reset_password_email(email: EmailStr, host: str):
+    """
+    Send reset password verification email.
+
+    Args:
+        email (EmailStr): The user's email address.
+        host (str): The application's base URL.
+
+    Raises:
+        ConnectionErrors: If there is an issue sending the email.
+    """
+
+    try:
+        from src.services.auth import create_email_token
+
+        reset_token = create_email_token({"sub": email})
+        reset_url = f"{host}/auth/reset-password/confirm?token={reset_token}"
+
+        message = MessageSchema(
+            subject="Reset Your Password",
+            recipients=[email],
+            template_body={"reset_url": reset_url},
+            subtype=MessageType.html,
+        )
+
+        fm = FastMail(conf)
+        await fm.send_message(message, template_name="reset_password.html")
+
+    except ConnectionErrors as err:
+        logger.error(f"Failed to send reset password email: {err}")
+        print(f"Failed to send reset password email: {err}")
+    except Exception as e:
+        logger.error(f"Unexpected error in send_reset_password_email: {e}")
+        print(f"Unexpected error: {e}")

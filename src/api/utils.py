@@ -19,7 +19,9 @@ async def healthchecker(db: AsyncSession = Depends(get_db)):
         dict: A success message if the database is reachable, otherwise raises an error.
     """
     try:
+        print("db", db)
         result = await db.execute(text("SELECT 1"))
+        print("result", result)
         result = result.scalar_one_or_none()
 
         if result is None:
@@ -29,7 +31,6 @@ async def healthchecker(db: AsyncSession = Depends(get_db)):
             )
         return {"message": "Welcome to FastAPI!"}
     except Exception as e:
-        print(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error connecting to the database",

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 
-class User(BaseModel):
+class UserSchema(BaseModel):
     """
     Schema for representing a user in responses.
 
@@ -16,11 +16,12 @@ class User(BaseModel):
     username: str
     email: str
     avatar: str
+    role: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserCreate(BaseModel):
+class UserCreateSchema(BaseModel):
     """
     Schema for creating a new user.
 
@@ -35,7 +36,7 @@ class UserCreate(BaseModel):
     password: str
 
 
-class Token(BaseModel):
+class TokenSchema(BaseModel):
     """
     Schema for authentication tokens.
 
@@ -48,7 +49,7 @@ class Token(BaseModel):
     token_type: str
 
 
-class RequestEmail(BaseModel):
+class RequestEmailSchema(BaseModel):
     """
     Schema for requesting email-related operations.
 
@@ -57,3 +58,27 @@ class RequestEmail(BaseModel):
     """
 
     email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """
+    Schema for requesting password reset requests.
+
+    Attributes:
+        email (EmailStr): The email address for verification or password reset requests.
+    """
+
+    email: EmailStr
+
+
+class ResetPasswordConfirm(BaseModel):
+    """
+    Schema for requesting password reset confirmation requests.
+
+    Attributes:
+        email (EmailStr): The email address for verification or password reset confirmation requests.
+        new_password (str): The new password.
+    """
+
+    token: str
+    new_password: str

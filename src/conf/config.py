@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 
 load_dotenv()
 
+
 class Settings(BaseSettings):
     """
     Configuration settings for the application.
@@ -67,6 +68,13 @@ class Settings(BaseSettings):
 
     VALIDATE_CERTS: bool = True
     """Boolean flag indicating whether to validate SSL certificates."""
+
+    REDIS_HOST: str = "localhost"
+    """Redis host connection URL."""
+
+    REDIS_PORT: int = 6379
+    """Redis port connection URL."""
+
 
 settings = Settings()
 """

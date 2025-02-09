@@ -96,7 +96,9 @@ class ContactService:
         Returns:
             bool: True if deletion was successful.
         """
-        await self.repository.delete(contact_id=contact_id, user=user)
+        contact = await self.repository.delete(contact_id=contact_id, user=user)
+        if contact is None:
+            return False
         return True
 
     async def get_upcoming_birthdays(self, user: User) -> Sequence[Contact]:

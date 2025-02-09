@@ -3,8 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from libgravatar import Gravatar
 
+from src.database.models import User
 from src.repository.users import UserRepository
-from src.schemas.users import UserCreate
+from src.schemas.users import UserCreateSchema
 
 
 class UserService:
@@ -21,12 +22,12 @@ class UserService:
         """
         self.repository = UserRepository(db)
 
-    async def create_user(self, body: UserCreate):
+    async def create_user(self, body: UserCreateSchema):
         """
         Creates a new user and assigns an avatar if available.
 
         Args:
-            body (UserCreate): The user creation data.
+            body (UserCreateSchema): The user creation data.
 
         Returns:
             User: The newly created user.
@@ -64,7 +65,7 @@ class UserService:
         """
         return await self.repository.get_user_by_username(username)
 
-    async def get_user_by_email(self, email: EmailStr):
+    async def get_user_by_email(self, email: EmailStr) -> User | None:
         """
         Retrieves a user by their email.
 
@@ -72,11 +73,11 @@ class UserService:
             email (EmailStr): The email address to search for.
 
         Returns:
-            User: The user if found.
+            v: The user if found.
         """
         return await self.repository.get_user_by_email(email)
 
-    async def update_avatar_url(self, email: EmailStr, url: str):
+    async def update_avatar_url(self, email: EmailStr, url: str) -> User:
         """
         Updates the avatar URL of a user.
 
@@ -97,3 +98,16 @@ class UserService:
             email (EmailStr): The email address to confirm.
         """
         return await self.repository.confirmed_email(email)
+
+    async def update_password(self, email: EmailStr, new_hashed_password: str):
+        """
+        Updates the user's password.
+
+        Args:
+            email (EmailStr): The user's email.
+            new_hashed_password (str): The new password.
+
+        Returns:
+            User: The updated user.
+        """
+        return await self.repository.update_password(email, new_hashed_password)

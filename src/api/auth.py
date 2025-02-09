@@ -9,9 +9,20 @@ from fastapi import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
-from src.schemas.users import UserCreate, Token, User, RequestEmail
-from src.services.auth import create_access_token, Hash, get_email_from_token
-from src.services.email import send_email
+from src.schemas.users import (
+    UserCreateSchema,
+    TokenSchema,
+    UserSchema,
+    RequestEmailSchema,
+    ResetPasswordRequest,
+    ResetPasswordConfirm,
+)
+from src.services.auth import (
+    create_access_token,
+    Hash,
+    get_email_from_token,
+)
+from src.services.email import send_email, send_reset_password_email
 from src.services.users import UserService
 from src.database.db import get_db
 
@@ -40,9 +51,11 @@ class OAuth2PasswordRequestFormEmail(OAuth2PasswordRequestForm):
         )
 
 
-@router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserSchema, status_code=status.HTTP_201_CREATED
+)
 async def register_user(
-    user_data: UserCreate,
+    user_data: UserCreateSchema,
     background_tasks: BackgroundTasks,
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -51,13 +64,13 @@ async def register_user(
     Registers a new user in the system.
 
     Args:
-        user_data (UserCreate): The data required to create a user.
+        user_data (UserCreateSchema): The data required to create a user.
         background_tasks (BackgroundTasks): Tasks to be executed in the background.
         request (Request): The HTTP request instance.
         db (AsyncSession): The database session dependency.
 
     Returns:
-        User: The newly registered user.
+        UserSchema: The newly registered user.
     """
     user_service = UserService(db)
 
@@ -82,7 +95,7 @@ async def register_user(
     return new_user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=TokenSchema)
 async def login_user(
     form_data: OAuth2PasswordRequestFormEmail = Depends(),
     db: AsyncSession = Depends(get_db),
@@ -95,7 +108,7 @@ async def login_user(
         db (AsyncSession): The database session dependency.
 
     Returns:
-        Token: A dictionary containing the access token and token type.
+        TokenSchema: A dictionary containing the access token and token type.
     """
     user_service = UserService(db)
     user = await user_service.get_user_by_email(form_data.username)
@@ -113,7 +126,7 @@ async def login_user(
             detail="Email confirm failed",
         )
 
-    access_token = await create_access_token(data={"sub": user.email})
+    access_token = await create_access_token(data={"sub": user.email}, role=user.role)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -144,7 +157,7 @@ async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
 
 @router.post("/request_email")
 async def request_email(
-    body: RequestEmail,
+    body: RequestEmailSchema,
     background_tasks: BackgroundTasks,
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -153,7 +166,7 @@ async def request_email(
     Requests an email confirmation for a user.
 
     Args:
-        body (RequestEmail): The request containing the email to confirm.
+        body (RequestEmailSchema): The request containing the email to confirm.
         background_tasks (BackgroundTasks): Background task manager.
         request (Request): The HTTP request instance.
         db (AsyncSession): The database session dependency.
@@ -171,3 +184,65 @@ async def request_email(
             send_email, user.email, user.username, request.base_url
         )
     return {"message": "Check your email for confirmation"}
+
+
+@router.post("/reset-password")
+async def request_password_reset(
+    body: ResetPasswordRequest,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Request for password reset. User get an confirmation email.
+
+    Args:
+        body (RequestEmailSchema): The request containing the email to confirm.
+        background_tasks (BackgroundTasks): Background task manager.
+        request (Request): The HTTP request instance.
+        db (AsyncSession): The database session dependency.
+
+    Returns:
+        dict: Message indicating the confirmation email was sent.
+    """
+    user_service = UserService(db)
+    user = await user_service.get_user_by_email(body.email)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    background_tasks.add_task(send_reset_password_email, user.email, request.base_url)
+
+    return {"message": "Check your email for password reset instructions"}
+
+
+@router.post("/reset-password/confirm")
+async def confirm_reset_password(
+    body: ResetPasswordConfirm, db: AsyncSession = Depends(get_db)
+):
+    """
+    Confirm a password reset email.
+
+    Args:
+        body (ResetPasswordConfirm): The request containing the email and password.
+        db (AsyncSession): The database session dependency.
+
+    Returns:
+        dict: Повідомлення про успішне скидання пароля.
+    """
+    email = await get_email_from_token(body.token)
+    user_service = UserService(db)
+    user = await user_service.get_user_by_email(email)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token or user not found",
+        )
+
+    new_hashed_password = Hash().get_password_hash(body.new_password)
+    await user_service.update_password(email, new_hashed_password)
+
+    return {"message": "Password successfully reset"}

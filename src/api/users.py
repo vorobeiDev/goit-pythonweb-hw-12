@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Request, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.conf.config import settings
 from src.database.db import get_db
-from src.schemas.users import User
-from src.services.auth import get_current_user
+from src.schemas.users import UserSchema
+from src.services.auth import get_current_user, is_admin
 from src.services.upload_file import UploadFileService
 from src.services.users import UserService
 from src.utils.limiter import limiter
@@ -12,26 +12,26 @@ from src.utils.limiter import limiter
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserSchema)
 @limiter.limit("5/minute")
-async def me(request: Request, user: User = Depends(get_current_user)):
+async def me(request: Request, user: UserSchema = Depends(get_current_user)):
     """
     Retrieve the details of the currently authenticated user.
 
     Args:
         request (Request): The request instance.
-        user (User): The currently authenticated user.
+        user (UserSchema): The currently authenticated user.
 
     Returns:
-        User: The authenticated user's details.
+        UserSchema: The authenticated user's details.
     """
     return user
 
 
-@router.patch("/avatar", response_model=User)
+@router.patch("/avatar", response_model=UserSchema)
 async def update_avatar_user(
     file: UploadFile = File(),
-    user: User = Depends(get_current_user),
+    user: UserSchema = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -39,12 +39,19 @@ async def update_avatar_user(
 
     Args:
         file (UploadFile): The uploaded avatar file.
-        user (User): The currently authenticated user.
+        user (UserSchema): The currently authenticated user.
         db (AsyncSession): The database session dependency.
 
     Returns:
-        User: The user with the updated avatar.
+        UserSchema: The user with the updated avatar.
     """
+    print(user.username)
+    print(user.email)
+    print(user.role)
+    print(is_admin(user))
+    if not is_admin(user):
+        raise HTTPException(status_code=403, detail="Only admins can update avatars")
+
     avatar_url = UploadFileService(
         settings.CLD_NAME, settings.CLD_API_KEY, settings.CLD_API_SECRET
     ).upload_file(file, user.username)
