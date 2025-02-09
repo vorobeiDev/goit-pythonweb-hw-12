@@ -14,8 +14,20 @@ from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
-
 class Contact(Base):
+    """
+    Represents a contact entity in the database.
+
+    Attributes:
+        id (int): The unique identifier for the contact.
+        name (str): The name of the contact.
+        email (str): The email address of the contact.
+        phone (str): The phone number of the contact.
+        birthday (date): The birth date of the contact.
+        additional_data (str, optional): Any additional information related to the contact.
+        user_id (int): The ID of the user who owns the contact.
+        user (User): Relationship reference to the User entity.
+    """
     __tablename__ = "contacts"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -30,8 +42,19 @@ class Contact(Base):
     )
     user = relationship("User", backref="users")
 
-
 class User(Base):
+    """
+    Represents a user entity in the database.
+
+    Attributes:
+        id (int): The unique identifier for the user.
+        username (str): The username of the user.
+        email (str): The email address of the user.
+        hashed_password (str): The hashed password of the user.
+        created_at (datetime): The timestamp when the user was created.
+        avatar (str, optional): The URL of the user's avatar.
+        confirmed (bool): Indicates whether the user's email has been confirmed.
+    """
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)

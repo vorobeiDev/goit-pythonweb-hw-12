@@ -21,7 +21,7 @@ class Hash:
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    def verify_password(self, plain_password, hashed_password):
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
         Verify if the provided password matches the stored hashed password.
 
@@ -34,7 +34,7 @@ class Hash:
         """
         return self.pwd_context.verify(plain_password, hashed_password)
 
-    def get_password_hash(self, password: str):
+    def get_password_hash(self, password: str) -> str:
         """
         Hash a password using bcrypt.
 
@@ -50,7 +50,17 @@ class Hash:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-async def create_access_token(data: dict, expires_delta: Optional[int] = None):
+async def create_access_token(data: dict, expires_delta: Optional[int] = None) -> str:
+    """
+    Generate a JWT access token with an expiration time.
+
+    Args:
+        data (dict): The payload data to include in the token.
+        expires_delta (Optional[int]): The expiration time in seconds.
+
+    Returns:
+        str: Encoded JWT access token.
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + timedelta(seconds=expires_delta)
@@ -65,7 +75,20 @@ async def create_access_token(data: dict, expires_delta: Optional[int] = None):
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
-):
+) -> UserService:
+    """
+    Retrieve the currently authenticated user from a JWT token.
+
+    Args:
+        token (str): The JWT access token provided by the user.
+        db (AsyncSession): The database session.
+
+    Returns:
+        UserService: The authenticated user instance.
+
+    Raises:
+        HTTPException: If token validation fails or the user does not exist.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -76,7 +99,7 @@ async def get_current_user(
         payload = jwt.decode(
             token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
         )
-        email = payload["sub"]
+        email = payload.get("sub")
         if email is None:
             raise credentials_exception
     except JWTError as e:
@@ -88,7 +111,16 @@ async def get_current_user(
     return user
 
 
-def create_email_token(data: dict):
+def create_email_token(data: dict) -> str:
+    """
+    Generate an email confirmation token.
+
+    Args:
+        data (dict): The payload data to encode in the token.
+
+    Returns:
+        str: Encoded JWT token with a 7-day expiration time.
+    """
     to_encode = data.copy()
     expire = datetime.now(UTC) + timedelta(days=7)
     to_encode.update({"iat": datetime.now(UTC), "exp": expire})
@@ -96,12 +128,24 @@ def create_email_token(data: dict):
     return token
 
 
-async def get_email_from_token(token: str):
+async def get_email_from_token(token: str) -> str:
+    """
+    Extract the email address from an email confirmation token.
+
+    Args:
+        token (str): The JWT token to decode.
+
+    Returns:
+        str: The extracted email address.
+
+    Raises:
+        HTTPException: If the token is invalid or cannot be processed.
+    """
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
         )
-        email = payload["sub"]
+        email = payload.get("sub")
         return email
     except JWTError as e:
         raise HTTPException(

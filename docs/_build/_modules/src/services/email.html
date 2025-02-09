@@ -1,0 +1,157 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.services.email &mdash; Contacts Rest API 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Contacts Rest API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">src</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Contacts Rest API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.services.email</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.services.email</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_mail</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMail</span><span class="p">,</span> <span class="n">MessageSchema</span><span class="p">,</span> <span class="n">ConnectionConfig</span><span class="p">,</span> <span class="n">MessageType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_mail.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConnectionErrors</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailStr</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.services.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_email_token</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.conf.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
+<span class="n">conf</span> <span class="o">=</span> <span class="n">ConnectionConfig</span><span class="p">(</span>
+    <span class="n">MAIL_USERNAME</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_USERNAME</span><span class="p">,</span>
+    <span class="n">MAIL_PASSWORD</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_PASSWORD</span><span class="p">,</span>
+    <span class="n">MAIL_FROM</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_FROM</span><span class="p">,</span>
+    <span class="n">MAIL_PORT</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_PORT</span><span class="p">,</span>
+    <span class="n">MAIL_SERVER</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_SERVER</span><span class="p">,</span>
+    <span class="n">MAIL_FROM_NAME</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_FROM_NAME</span><span class="p">,</span>
+    <span class="n">MAIL_STARTTLS</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_STARTTLS</span><span class="p">,</span>
+    <span class="n">MAIL_SSL_TLS</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">MAIL_SSL_TLS</span><span class="p">,</span>
+    <span class="n">USE_CREDENTIALS</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">USE_CREDENTIALS</span><span class="p">,</span>
+    <span class="n">VALIDATE_CERTS</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">VALIDATE_CERTS</span><span class="p">,</span>
+    <span class="n">TEMPLATE_FOLDER</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;templates&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="send_email">
+<a class="viewcode-back" href="../../../src.services.html#src.services.email.send_email">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_email</span><span class="p">(</span><span class="n">email</span><span class="p">:</span> <span class="n">EmailStr</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sends an email verification message to a user.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        email (EmailStr): The recipient&#39;s email address.</span>
+<span class="sd">        username (str): The username of the recipient.</span>
+<span class="sd">        host (str): The application&#39;s base URL.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ConnectionErrors: If there is an issue sending the email.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">token_verification</span> <span class="o">=</span> <span class="n">create_email_token</span><span class="p">({</span><span class="s2">&quot;sub&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">MessageSchema</span><span class="p">(</span>
+            <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Confirm your email&quot;</span><span class="p">,</span>
+            <span class="n">recipients</span><span class="o">=</span><span class="p">[</span><span class="n">email</span><span class="p">],</span>
+            <span class="n">template_body</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span>
+                <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
+                <span class="s2">&quot;token&quot;</span><span class="p">:</span> <span class="n">token_verification</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">subtype</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">html</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">fm</span> <span class="o">=</span> <span class="n">FastMail</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">fm</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">template_name</span><span class="o">=</span><span class="s2">&quot;verify_email.html&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectionErrors</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Vlad Vorobei.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

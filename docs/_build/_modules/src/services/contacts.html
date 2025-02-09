@@ -1,0 +1,251 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.services.contacts &mdash; Contacts Rest API 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Contacts Rest API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">src</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Contacts Rest API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.services.contacts</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.services.contacts</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">timedelta</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.ext.asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncSession</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.repository.contacts</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContactRepository</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.schemas.contacts</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContactCreate</span><span class="p">,</span> <span class="n">ContactUpdate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.database.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Contact</span><span class="p">,</span> <span class="n">User</span>
+
+
+<div class="viewcode-block" id="ContactService">
+<a class="viewcode-back" href="../../../src.services.html#src.services.contacts.ContactService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ContactService</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Service class for handling contact-related business logic.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">AsyncSession</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the ContactService with a database session.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            db (AsyncSession): The SQLAlchemy async session.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">repository</span> <span class="o">=</span> <span class="n">ContactRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ContactService.create_contact">
+<a class="viewcode-back" href="../../../src.services.html#src.services.contacts.ContactService.create_contact">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_contact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contact_data</span><span class="p">:</span> <span class="n">ContactCreate</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Contact</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new contact for the user.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            contact_data (ContactCreate): The data required to create a contact.</span>
+<span class="sd">            user (User): The owner of the contact.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Contact: The newly created contact.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">body</span><span class="o">=</span><span class="n">contact_data</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ContactService.get_contact">
+<a class="viewcode-back" href="../../../src.services.html#src.services.contacts.ContactService.get_contact">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_contact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves a specific contact by ID.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            contact_id (int): The unique identifier of the contact.</span>
+<span class="sd">            user (User): The owner of the contact.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[Contact]: The contact if found, otherwise None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">contact_id</span><span class="o">=</span><span class="n">contact_id</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ContactService.get_contacts">
+<a class="viewcode-back" href="../../../src.services.html#src.services.contacts.ContactService.get_contacts">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_contacts</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves a list of contacts for a user with optional filters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            user (User): The owner of the contacts.</span>
+<span class="sd">            name (Optional[str]): Filter contacts by name.</span>
+<span class="sd">            email (Optional[str]): Filter contacts by email.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Sequence[Contact]: A list of matching contacts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ContactService.update_contact">
+<a class="viewcode-back" href="../../../src.services.html#src.services.contacts.ContactService.update_contact">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_contact</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">update_data</span><span class="p">:</span> <span class="n">ContactUpdate</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates an existing contact&#39;s details.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            contact_id (int): The unique identifier of the contact.</span>
+<span class="sd">            update_data (ContactUpdate): The updated contact details.</span>
+<span class="sd">            user (User): The owner of the contact.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[Contact]: The updated contact if successful, otherwise None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">contact_id</span><span class="o">=</span><span class="n">contact_id</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">update_data</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ContactService.delete_contact">
+<a class="viewcode-back" href="../../../src.services.html#src.services.contacts.ContactService.delete_contact">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_contact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Deletes a contact by ID.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            contact_id (int): The unique identifier of the contact to delete.</span>
+<span class="sd">            user (User): The owner of the contact.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if deletion was successful.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">contact_id</span><span class="o">=</span><span class="n">contact_id</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="ContactService.get_upcoming_birthdays">
+<a class="viewcode-back" href="../../../src.services.html#src.services.contacts.ContactService.get_upcoming_birthdays">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_upcoming_birthdays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves contacts with upcoming birthdays within the next 7 days.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            user (User): The owner of the contacts.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Sequence[Contact]: A list of contacts with upcoming birthdays.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">contacts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repository</span><span class="o">.</span><span class="n">get_all</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span>
+        <span class="n">today</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+        <span class="n">upcoming_contacts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">contact</span> <span class="ow">in</span> <span class="n">contacts</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">birthday_this_year</span> <span class="o">=</span> <span class="n">contact</span><span class="o">.</span><span class="n">birthday</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">today</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">birthday_this_year</span> <span class="o">=</span> <span class="n">contact</span><span class="o">.</span><span class="n">birthday</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">today</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">28</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">birthday_this_year</span> <span class="o">&lt;</span> <span class="n">today</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">birthday_this_year</span> <span class="o">=</span> <span class="n">contact</span><span class="o">.</span><span class="n">birthday</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">today</span><span class="o">.</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="n">birthday_this_year</span> <span class="o">=</span> <span class="n">contact</span><span class="o">.</span><span class="n">birthday</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                        <span class="n">year</span><span class="o">=</span><span class="n">today</span><span class="o">.</span><span class="n">year</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">28</span>
+                    <span class="p">)</span>
+            <span class="k">if</span> <span class="n">today</span> <span class="o">&lt;=</span> <span class="n">birthday_this_year</span> <span class="o">&lt;=</span> <span class="n">today</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">7</span><span class="p">):</span>
+                <span class="n">upcoming_contacts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">contact</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">upcoming_contacts</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Vlad Vorobei.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

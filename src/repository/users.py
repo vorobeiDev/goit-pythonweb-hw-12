@@ -9,6 +9,8 @@ from src.schemas.users import UserCreate
 class UserRepository:
     """
     Repository for interacting with user data in the database.
+
+    This class provides methods to create, retrieve, update, and delete user records.
     """
 
     def __init__(self, session: AsyncSession):
@@ -18,7 +20,6 @@ class UserRepository:
         Args:
             session (AsyncSession): The SQLAlchemy async session.
         """
-
         self.db = session
 
     async def get_user_by_id(self, user_id: int) -> User | None:
@@ -31,7 +32,6 @@ class UserRepository:
         Returns:
             User | None: The user object if found, else None.
         """
-
         stmt = select(User).filter_by(id=user_id)
         user = await self.db.execute(stmt)
         return user.scalar_one_or_none()
@@ -46,7 +46,6 @@ class UserRepository:
         Returns:
             User | None: The user object if found, else None.
         """
-
         stmt = select(User).filter_by(username=username)
         user = await self.db.execute(stmt)
         return user.scalar_one_or_none()
@@ -61,7 +60,6 @@ class UserRepository:
         Returns:
             User | None: The user object if found, else None.
         """
-
         stmt = select(User).filter_by(email=email)
         user = await self.db.execute(stmt)
         return user.scalar_one_or_none()
@@ -77,7 +75,6 @@ class UserRepository:
         Returns:
             User: The created user object.
         """
-
         user = User(
             **body.model_dump(exclude_unset=True, exclude={"password"}),
             hashed_password=body.password,
@@ -99,7 +96,6 @@ class UserRepository:
         Returns:
             User: The updated user object.
         """
-
         user = await self.get_user_by_email(email)
         user.avatar = url
         await self.db.commit()
@@ -113,7 +109,6 @@ class UserRepository:
         Args:
             email (EmailStr): The email of the user whose email is being confirmed.
         """
-
         user = await self.get_user_by_email(email)
         user.confirmed = True
         await self.db.commit()
